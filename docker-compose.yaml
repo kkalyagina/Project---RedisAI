@@ -1,0 +1,107 @@
+#docker-compose build --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)
+#docker-compose --env-file .env up
+#docker exec -it training_cont bash
+#:/app# python3 scripts/launch_training.py --dataset=small
+
+version: "3.7"
+services:
+  postgres-server:
+    build:
+      context: ./
+      dockerfile: ./Dockerfiles/postgres_image/Dockerfile
+    container_name: ${PG_CONTAINER}
+    expose:
+      - "${PG_PORT}" 
+    ports:
+      - "${PG_PORT}:${PG_PORT}"
+    volumes: 
+      - ./mlflow_db:/var/lib/postgresql/data/mlflow_db
+    environment: 
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - PGDATA=/var/lib/postgresql/data/mlflow_db
+    hostname: ${PG_CONTAINER}
+
+  mlflow-server:
+    build: 
+      context: .
+      dockerfile: ./Dockerfiles/mlflow_image/Dockerfile
+    container_name: ${MLFLOW_CONTAINER}
+    volumes: 
+      - ./Dockerfiles/mlflow_image:/mlflow_image
+    depends_on:
+      - postgres-server
+    expose:
+      - "${MLFLOW_PORT}"
+    ports:
+      - "${MLFLOW_PORT}:${MLFLOW_PORT_OUT}/tcp"
+    environment: 
+      - PG_USER=${PG_USER}
+      - PG_PASS=${PG_PASS}
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - PG_CONTAINER=${PG_CONTAINER}
+      - PG_PORT=${PG_PORT}
+      - MLFLOW_PORT=${MLFLOW_PORT}
+    command:  /bin/bash /mlflow_image/start_mlflow_srv.sh
+
+  redisai:
+    image: redisai/redisai
+    container_name: "${REDISAI_CONTAINER}"
+    expose:
+      - "${REDISAI_PORT}"
+    ports:
+      - "${REDISAI_PORT}:${REDISAI_PORT}"
+    depends_on: 
+      - mlflow-server
+
+  flask-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfiles/flask_image/Dockerfile
+    container_name: "${APP_CONTAINER}"
+    depends_on:
+      - redisai
+      - mlflow-server
+    expose:
+      - "${APP_PORT}"
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    volumes:
+      - ./scripts:/home/mask/scripts
+      - ./data/models:/home/mask/models
+      - ./.env:/home/mask/.env
+    environment: 
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    command: bash -c "cd /home/mask && python ./scripts/flask_service.py"
+
+  training:
+    build:
+      context: ./
+      dockerfile: ./Dockerfiles/train_models/Dockerfile
+    container_name: "${TRAINING_CONTAINER}"
+    depends_on:
+      - redisai
+      - mlflow-server
+      - flask-service
+    #COMMENT IF NO GPU !
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: [gpu]
+    environment: 
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    volumes:
+      - ./data/datasets:/app/data/Datasets
+      - ./scripts:/app/scripts
+      - ./data/models:/app/data/models
+      - ./.env:/app/.env
+    command: tail -f /dev/null
+    #command: python3 scripts/launch_training.py --dataset=small
+ 
+

@@ -1,0 +1,75 @@
+version: "3.7"
+services:
+  redisai:
+    image: redisai/redisai
+    expose:
+      - "6379"
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./Volume:/home/mask
+
+  initialization:
+    build:
+      context: .
+      dockerfile: Dockerfile_for_dc
+    depends_on:
+      - redisai
+    expose:
+      - "7777"
+    ports:
+      - "7776:7777"
+    volumes:
+      - ./Volume:/home/mask
+    command: bash -c "cd /home/mask/scripts && python setmodel.py"
+    restart: on-failure
+
+  images:
+    build:
+      context: .
+      dockerfile: Dockerfile_for_dc
+    expose:
+      - "7777"
+    ports:
+      - "7777:7777"
+    volumes:
+      - ./Volume:/home/mask
+    command: bash -c "cd /home/mask/scripts && python tensors.py"
+    restart: on-failure
+
+  model_1.15.0:
+    build:
+      context: .
+      dockerfile: Dockerfile_for_dc
+    depends_on:
+      - redisai
+      - initialization
+      - images
+    expose:
+      - "7777"
+    ports:
+      - "7778:7777"
+    volumes:
+      - ./Volume:/home/mask
+    command: bash -c "cd /home/mask/scripts && python model.py 'TF' 120 'tf_model'"
+    restart: on-failure
+
+  tflite:
+    build:
+      context: .
+      dockerfile: Dockerfile_for_dc
+    depends_on:
+      - redisai
+      - initialization
+      - images
+    expose:
+      - "7777"
+    ports:
+      - "7779:7777"
+    volumes:
+      - ./Volume:/home/mask
+    command: bash -c "cd /home/mask/scripts && python model.py 'TFLite' 120 'tflite_model'"
+    restart: on-failure
+    
+
+    

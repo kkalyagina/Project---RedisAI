@@ -1,0 +1,47 @@
+# Dockerfile with training functionality (not finished!!!!)
+
+FROM ubuntu:latest
+
+ENV DEBIAN_FRONTEND=noninteractive 
+# set the working directory in the container
+RUN mkdir app \
+    && apt-get update && apt-get install --no-install-recommends --no-install-suggests -y curl \
+    && apt-get install unzip \
+    && apt-get -y install python3 \
+    && apt-get -y install python3-pip \
+    && apt-get install ffmpeg libsm6 libxext6  -y \
+    && apt-get install wget \
+    && apt-get clean \
+    && pip3 -q install pip --upgrade 
+
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV GIT_PYTHON_REFRESH=quiet
+ENV DEBIAN_FRONTEND=noninteractive 
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*  \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-py37_4.9.2-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh && \
+    /opt/conda/bin/conda clean -tipsy && \
+    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+    echo "conda activate base" >> ~/.bashrc
+
+# install miniconda
+ENV PATH /opt/conda/bin:$PATH
+# copy the dependencies file to the working directory
+COPY ./Dockerfiles/train_models/requirements.txt .
+COPY ./setup.py .
+COPY ./RedMask ./RedMask
+RUN pip3 install argparse && \
+    python3 setup.py install
+ENV PYTHONPATH /app/
+
+WORKDIR app/
+
+
+CMD 
+

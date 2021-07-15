@@ -1,0 +1,60 @@
+output-format: text
+
+strictness: medium
+test-warnings: true
+doc-warnings: false
+
+uses:
+  - flask
+
+# inherits:
+#   - profile.yaml
+
+ignore-paths:
+  - docs
+
+pep8:
+  run: true
+  options:
+    max-line-length: 150
+
+mccabe: #to measure how complicated your functions
+  run: false
+  options:
+    max-complexity: 10
+
+pep257:
+  disable:
+    - D100
+    - D101
+    - D203 #conflict with D211
+
+pylint:
+  disable:
+    - bad-builtin
+    - too-few-public-methods
+  options:
+    max-locals: 15
+    max-returns: 6
+    max-branches: 15
+    max-statements: 60
+    max-parents: 7
+    max-attributes: 7
+    min-public-methods: 1
+    max-public-methods: 20
+    max-module-lines: 1000
+    max-line-length: 120
+
+pyroma: #to check that packages are built correctly
+  disable:
+    - PYR15
+    - PYR18
+
+mypy: #to check types
+  run: true
+  options:
+    ignore-missing-imports: true
+    follow-imports: skip
+
+vulture: #to find unused classes, functions and variables
+  run: true

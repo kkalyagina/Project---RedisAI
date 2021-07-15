@@ -1,0 +1,23 @@
+version: "3.7"
+services:
+  training:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/train_models/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: [gpu]
+    environment: 
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - MLFLOW_TRACKING_URI='postgresql://mlflow_user:mlflow@postgres/mlflow_db'
+    volumes:
+      - /mnt/Ubu_files/Datasets:/app/data/Datasets
+      - ~/.aws/:/root/.aws:ro
+
+
+volumes:
+  training: 
