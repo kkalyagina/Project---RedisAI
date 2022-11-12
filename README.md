@@ -1,10 +1,10 @@
-# Students_RedisAI
+# RedisAI
 
-Training project for testing Redis AI.
+Project for testing Redis AI.
 
-Mentor: Andrei Gavrilov
+Team Lead: Andrei Gavrilov
 
-Students: Konstantin Sviblov, Kristina Kaliagina, Andrei Savchuk
+Data Scientists: Konstantin Sviblov, Kristina Kaliagina, Andrei Savchuk
 
 
 **START instruction:**
